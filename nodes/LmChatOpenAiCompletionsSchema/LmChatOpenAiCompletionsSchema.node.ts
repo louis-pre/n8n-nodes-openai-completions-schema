@@ -1,7 +1,6 @@
-import { ChatOpenAI, type ChatOpenAIFields, type ClientOptions } from '@langchain/openai';
+import { ChatOpenAI, type ClientOptions } from '@langchain/openai';
 import pick from 'lodash/pick';
 import {
-	assertCredentialAllowsUrl,
 	NodeConnectionTypes,
 	type INodeProperties,
 	type IDataObject,
@@ -18,7 +17,6 @@ import { openAiFailedAttemptHandler } from './helpers/error-handling';
 import {
 	makeN8nLlmFailedAttemptHandler,
 	N8nLlmTracing,
-	getProxyAgent,
 	getConnectionHintNoticeField,
 } from '@n8n/ai-utilities';
 import { formatBuiltInTools, prepareAdditionalResponsesParams } from './common';
@@ -36,7 +34,7 @@ const INCLUDE_JSON_WARNING: INodeProperties = {
 };
 
 const OPENAI_MODEL_BUILDER_HINT = {
-	propertyHint:
+	message:
 		'Prefer the GPT-5.4 family: the flagship variant (e.g. `gpt-5.4`) for general use, a `-mini` / `-nano` variant when the task explicitly calls for cost-efficiency, or `-pro` only when the user asks for maximum capability. Never use gpt-4o, gpt-4-turbo, gpt-4, gpt-3.5, or earlier — those are superseded by the GPT-5 family and are not valid choices.',
 };
 
@@ -824,25 +822,12 @@ export class LmChatOpenAiCompletionsSchema implements INodeType {
 		};
 
 		if (options.baseURL) {
-			assertCredentialAllowsUrl({
-				node: this.getNode(),
-				credentialData: credentials,
-				url: options.baseURL,
-				pinnedUrl: typeof credentials.url === 'string' ? credentials.url : undefined,
-				surface: 'OpenAI',
-			});
 			configuration.baseURL = options.baseURL;
 		} else if (credentials.url) {
 			configuration.baseURL = credentials.url as string;
 		}
 
 		const timeout = options.timeout;
-		configuration.fetchOptions = {
-			dispatcher: getProxyAgent(configuration.baseURL ?? 'https://api.openai.com/v1', {
-				headersTimeout: timeout,
-				bodyTimeout: timeout,
-			}),
-		};
 		configuration.defaultHeaders = mergeCustomHeaders(
 			credentials,
 			(configuration.defaultHeaders ?? {}) as Record<string, string>,
@@ -860,7 +845,7 @@ export class LmChatOpenAiCompletionsSchema implements INodeType {
 						type: 'json_schema',
 						json_schema: {
 							name: options.jsonSchemaName,
-							schema: jsonParse(options.jsonSchema, {
+							schema: jsonParse(options.jsonSchema || '{}', {
 								errorMessage: 'Failed to parse JSON Schema',
 							}),
 							...(options.jsonSchemaDescription && { description: options.jsonSchemaDescription }),
@@ -885,8 +870,8 @@ export class LmChatOpenAiCompletionsSchema implements INodeType {
 			'baseURL',
 		]);
 
-		const fields: ChatOpenAIFields = {
-			apiKey: credentials.apiKey as string,
+		const fields: Record<string, unknown> = {
+			apiKey: (credentials.apiKey as string) || '',
 			model: modelName,
 			...includedOptions,
 			timeout,

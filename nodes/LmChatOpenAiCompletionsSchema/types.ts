@@ -62,4 +62,11 @@ export type TextOptions = {
 export type ChatResponseRequest = OpenAIClient.Responses.ResponseCreateParamsNonStreaming & {
 	conversation?: { id: string } | string;
 	top_logprobs?: number;
+	prompt_cache_key?: string;
+	safety_identifier?: string;
+	prompt?: {
+		id?: string;
+		version?: string;
+		variables?: Record<string, unknown>;
+	};
 };

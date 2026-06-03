@@ -1,5 +1,4 @@
 import type { OpenAIClient } from '@langchain/openai';
-import type { ChatOpenAIToolType } from '@langchain/openai/dist/utils/tools';
 import get from 'lodash/get';
 import isObject from 'lodash/isObject';
 import { isObjectEmpty, jsonParse } from 'n8n-workflow';
@@ -21,23 +20,11 @@ const removeEmptyProperties = <T>(rest: { [key: string]: any }): T => {
 		.reduce((a, k) => ({ ...a, [k]: rest[k] }), {}) as unknown as T;
 };
 
-const toArray = (str: string) =>
-	str
-		.split(',')
-		.map((e) => e.trim())
-		.filter(Boolean);
-
 export const formatBuiltInTools = (builtInTools: BuiltInTools) => {
-	const tools: ChatOpenAIToolType[] = [];
+	const tools: Array<OpenAIClient.Responses.Tool> = [];
 	if (builtInTools) {
 		const webSearchOptions = get(builtInTools, 'webSearch');
 		if (webSearchOptions) {
-			let allowedDomains: string[] | undefined;
-			const allowedDomainsRaw = get(webSearchOptions, 'allowedDomains', '');
-			if (allowedDomainsRaw) {
-				allowedDomains = toArray(allowedDomainsRaw);
-			}
-
 			let userLocation: OpenAIClient.Responses.WebSearchTool.UserLocation | undefined;
 			if (webSearchOptions.country || webSearchOptions.city || webSearchOptions.region) {
 				userLocation = {
@@ -49,10 +36,9 @@ export const formatBuiltInTools = (builtInTools: BuiltInTools) => {
 			}
 
 			tools.push({
-				type: 'web_search',
+				type: 'web_search_preview',
 				search_context_size: get(webSearchOptions, 'searchContextSize', 'medium'),
 				user_location: userLocation,
-				...(allowedDomains && { filters: { allowed_domains: allowedDomains } }),
 			});
 		}
 
@@ -87,7 +73,7 @@ export const prepareAdditionalResponsesParams = (options: ModelOptions) => {
 	const body: Partial<ChatResponseRequest> = {
 		prompt_cache_key: options.promptCacheKey,
 		safety_identifier: options.safetyIdentifier,
-		service_tier: options.serviceTier,
+		service_tier: options.serviceTier as Exclude<ModelOptions['serviceTier'], 'priority'> | undefined,
 		top_logprobs: options.topLogprobs,
 	};
 
@@ -116,9 +102,7 @@ export const prepareAdditionalResponsesParams = (options: ModelOptions) => {
 
 	if (options.textFormat) {
 		const textOptions = get(options, 'textFormat.textOptions', {} as TextOptions);
-		const textConfig: OpenAIClient.Responses.ResponseTextConfig = {
-			verbosity: textOptions.verbosity as OpenAIClient.Responses.ResponseTextConfig['verbosity'],
-		};
+		const textConfig: OpenAIClient.Responses.ResponseTextConfig = {};
 		if (textOptions.type === 'json_schema') {
 			textConfig.format = {
 				type: textOptions.type,
