@@ -442,8 +442,10 @@ export class LmChatOpenAiCompletionsSchema implements INodeType {
 		);
 
 		const modelKwargs: Record<string, unknown> = {};
+		console.error('[DEBUG] options.responseFormat:', JSON.stringify(options.responseFormat, null, 2));
 		if (options.responseFormat) {
 			const responseOptions = options.responseFormat.responseOptions?.[0];
+			console.error('[DEBUG] responseOptions:', JSON.stringify(responseOptions, null, 2));
 			const formatType = responseOptions?.type;
 			if (formatType === 'json_schema') {
 				const ro = responseOptions!;
