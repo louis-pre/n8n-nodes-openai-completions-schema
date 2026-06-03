@@ -3,13 +3,13 @@ export type ModelOptions = {
 	frequencyPenalty?: number;
 	maxTokens?: number;
 	responseFormat?: {
-		responseOptions?: Array<{
+		responseOptions?: {
 			type?: 'text' | 'json_schema' | 'json_object';
 			name?: string;
 			schema?: string;
 			description?: string;
 			strict?: boolean;
-		}>;
+		};
 	};
 	presencePenalty?: number;
 	temperature?: number;
