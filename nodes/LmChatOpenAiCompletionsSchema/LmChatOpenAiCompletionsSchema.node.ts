@@ -11,9 +11,9 @@ import {
 	type SupplyData,
 } from 'n8n-workflow';
 
-import { mergeCustomHeaders } from '@utils/helpers';
+import { mergeCustomHeaders } from './helpers/helpers';
 
-import { openAiFailedAttemptHandler } from '../../vendors/OpenAi/helpers/error-handling';
+import { openAiFailedAttemptHandler } from './helpers/error-handling';
 import {
 	makeN8nLlmFailedAttemptHandler,
 	N8nLlmTracing,
@@ -70,7 +70,7 @@ const jsonSchemaExample = `{
   "required": ["message"]
 }`;
 
-export class LmChatOpenAi implements INodeType {
+export class LmChatOpenAiCompletionsSchema implements INodeType {
 	methods = {
 		listSearch: {
 			searchModels,
@@ -78,15 +78,15 @@ export class LmChatOpenAi implements INodeType {
 	};
 
 	description: INodeTypeDescription = {
-		displayName: 'OpenAI Chat Model',
+		displayName: 'OpenAI Chat Model (JSON Schema)',
 
-		name: 'lmChatOpenAi',
+		name: 'lmChatOpenAiCompletionsSchema',
 		icon: { light: 'file:openAiLight.svg', dark: 'file:openAiLight.dark.svg' },
 		group: ['transform'],
 		version: [1, 1.1, 1.2, 1.3],
 		description: 'For advanced usage with an AI chain',
 		defaults: {
-			name: 'OpenAI Chat Model',
+			name: 'OpenAI Chat Model (JSON Schema)',
 		},
 		codex: {
 			categories: ['AI'],
