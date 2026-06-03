@@ -34,32 +34,6 @@ const OPENAI_MODEL_BUILDER_HINT = {
 		'Prefer the GPT-5.4 family: the flagship variant (e.g. `gpt-5.4`) for general use, a `-mini` / `-nano` variant when the task explicitly calls for cost-efficiency, or `-pro` only when the user asks for maximum capability. Never use gpt-4o, gpt-4-turbo, gpt-4, gpt-3.5, or earlier — those are superseded by the GPT-5 family and are not valid choices.',
 };
 
-const completionsResponseFormat: INodeProperties = {
-	displayName: 'Response Format',
-	name: 'responseFormat',
-	default: 'text',
-	type: 'options',
-	options: [
-		{
-			name: 'Text',
-			value: 'text',
-			description: 'Regular text response',
-		},
-		{
-			name: 'JSON',
-			value: 'json_object',
-			description:
-				'Enables JSON mode, which should guarantee the message the model generates is valid JSON',
-		},
-		{
-			name: 'JSON Schema',
-			value: 'json_schema',
-			description:
-				'Enables JSON Schema mode, which guarantees the response matches the provided JSON Schema',
-		},
-	],
-};
-
 const jsonSchemaExample = `{
   "type": "object",
   "properties": {
@@ -70,6 +44,83 @@ const jsonSchemaExample = `{
   "additionalProperties": false,
   "required": ["message"]
 }`;
+
+const responseFormatOptions: INodeProperties = {
+	displayName: 'Response Format',
+	name: 'responseFormat',
+	type: 'fixedCollection',
+	default: { responseOptions: [{ type: 'text' }] },
+	options: [
+		{
+			displayName: 'Response Options',
+			name: 'responseOptions',
+			values: [
+				{
+					displayName: 'Type',
+					name: 'type',
+					type: 'options',
+					default: 'text',
+					options: [
+						{ name: 'Text', value: 'text' },
+						// eslint-disable-next-line n8n-nodes-base/node-param-display-name-miscased
+						{ name: 'JSON Schema (recommended)', value: 'json_schema' },
+						{ name: 'JSON Object', value: 'json_object' },
+					],
+				},
+				{
+					displayName: 'Name',
+					name: 'name',
+					type: 'string',
+					default: 'response_schema',
+					description:
+						'The name of the response format. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.',
+					displayOptions: {
+						show: {
+							type: ['json_schema'],
+						},
+					},
+				},
+				{
+					displayName: 'Schema',
+					name: 'schema',
+					type: 'json',
+					default: jsonSchemaExample,
+					description: 'The JSON Schema that the response must conform to',
+					displayOptions: {
+						show: {
+							type: ['json_schema'],
+						},
+					},
+				},
+				{
+					displayName: 'Description',
+					name: 'description',
+					type: 'string',
+					default: '',
+					description: 'Optional description of the JSON Schema',
+					displayOptions: {
+						show: {
+							type: ['json_schema'],
+						},
+					},
+				},
+				{
+					displayName: 'Strict',
+					name: 'strict',
+					type: 'boolean',
+					default: false,
+					description:
+						'Whether to require that the AI will always generate responses that match the provided JSON Schema',
+					displayOptions: {
+						show: {
+							type: ['json_schema'],
+						},
+					},
+				},
+			],
+		},
+	],
+};
 
 export class LmChatOpenAiCompletionsSchema implements INodeType {
 	methods = {
@@ -125,7 +176,7 @@ export class LmChatOpenAiCompletionsSchema implements INodeType {
 				...INCLUDE_JSON_WARNING,
 				displayOptions: {
 					show: {
-						'/options.responseFormat': ['json_object'],
+						'/options.responseFormat.responseOptions.type': ['json_object'],
 					},
 				},
 			},
@@ -133,7 +184,7 @@ export class LmChatOpenAiCompletionsSchema implements INodeType {
 				...INCLUDE_JSON_WARNING,
 				displayOptions: {
 					show: {
-						'/options.responseFormat': ['json_schema'],
+						'/options.responseFormat.responseOptions.type': ['json_schema'],
 					},
 				},
 			},
@@ -287,57 +338,7 @@ export class LmChatOpenAiCompletionsSchema implements INodeType {
 							maxValue: 32768,
 						},
 					},
-					completionsResponseFormat,
-					{
-						displayName: 'JSON Schema Name',
-						name: 'jsonSchemaName',
-						type: 'string',
-						default: 'response_schema',
-						description:
-							'The name of the response format. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.',
-						displayOptions: {
-							show: {
-								'/options.responseFormat': ['json_schema'],
-							},
-						},
-					},
-					{
-						displayName: 'JSON Schema',
-						name: 'jsonSchema',
-						type: 'json',
-						default: jsonSchemaExample,
-						description: 'The JSON Schema that the response must conform to',
-						displayOptions: {
-							show: {
-								'/options.responseFormat': ['json_schema'],
-							},
-						},
-					},
-					{
-						displayName: 'JSON Schema Description',
-						name: 'jsonSchemaDescription',
-						type: 'string',
-						default: '',
-						description: 'Optional description of the JSON Schema',
-						displayOptions: {
-							show: {
-								'/options.responseFormat': ['json_schema'],
-							},
-						},
-					},
-					{
-						displayName: 'JSON Schema Strict',
-						name: 'jsonSchemaStrict',
-						type: 'boolean',
-						default: false,
-						description:
-							'Whether to require that the response strictly matches the provided JSON Schema',
-						displayOptions: {
-							show: {
-								'/options.responseFormat': ['json_schema'],
-							},
-						},
-					},
+					responseFormatOptions,
 					{
 						displayName: 'Presence Penalty',
 						name: 'presencePenalty',
@@ -442,20 +443,23 @@ export class LmChatOpenAiCompletionsSchema implements INodeType {
 
 		const modelKwargs: Record<string, unknown> = {};
 		if (options.responseFormat) {
-			if (options.responseFormat === 'json_schema') {
+			const responseOptions = options.responseFormat.responseOptions?.[0];
+			const formatType = responseOptions?.type;
+			if (formatType === 'json_schema') {
+				const ro = responseOptions!;
 				modelKwargs.response_format = {
 					type: 'json_schema',
 					json_schema: {
-						name: options.jsonSchemaName,
-						schema: jsonParse(options.jsonSchema || '{}', {
+						name: ro.name,
+						schema: jsonParse(ro.schema || '{}', {
 							errorMessage: 'Failed to parse JSON Schema',
 						}),
-						...(options.jsonSchemaDescription && { description: options.jsonSchemaDescription }),
-						strict: options.jsonSchemaStrict,
+						...(ro.description && { description: ro.description }),
+						strict: ro.strict,
 					},
 				};
-			} else {
-				modelKwargs.response_format = { type: options.responseFormat };
+			} else if (formatType === 'json_object' || formatType === 'text') {
+				modelKwargs.response_format = { type: formatType };
 			}
 		}
 		if (options.reasoningEffort && ['low', 'medium', 'high'].includes(options.reasoningEffort)) {
