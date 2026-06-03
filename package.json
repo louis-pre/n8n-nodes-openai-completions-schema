@@ -1,51 +1,53 @@
 {
-    "name": "n8n-nodes-openai-completions-schema",
-    "version": "0.1.0",
-    "description": "OpenAI Chat Model with JSON Schema support for completions API",
-    "license": "MIT",
-    "keywords": [
-        "n8n-community-node-package"
-    ],
-    "scripts": {
-        "build": "n8n-node build",
-        "build:watch": "tsc --watch",
-        "dev": "n8n-node dev",
-        "lint": "n8n-node lint",
-        "lint:fix": "n8n-node lint --fix",
-        "release": "n8n-node release",
-        "prepublishOnly": "n8n-node prerelease"
-    },
-    "files": [
-        "dist"
-    ],
-    "n8n": {
-        "n8nNodesApiVersion": 1,
-        "strict": true,
-        "credentials": [],
-        "nodes": [
-            "dist/nodes/LmChatOpenAiCompletionsSchema/LmChatOpenAiCompletionsSchema.node.js"
-        ]
-    },
-    "devDependencies": {
-        "@n8n/node-cli": "*",
-        "@types/lodash": "^4.17.24",
-        "eslint": "9.29.0",
-        "prettier": "3.8.3",
-        "release-it": "20.2.0",
-        "typescript": "5.9.3"
-    },
-    "peerDependencies": {
-        "n8n-workflow": "*"
-    },
-    "dependencies": {
-        "@langchain/openai": "^0.1.0",
-        "@n8n/ai-utilities": "*",
-        "@n8n/config": "*",
-        "@n8n/di": "*",
-        "https-proxy-agent": "^7.0.2",
-        "lodash": "^4.17.21",
-        "openai": "^4.28.0",
-        "proxy-from-env": "^1.1.0",
-        "undici": "^6.19.2"
-    }
+  "name": "n8n-nodes-openai-completions-schema",
+  "version": "0.1.0",
+  "description": "OpenAI Chat Model with JSON Schema support for completions API",
+  "license": "MIT",
+  "author": "louis-pre",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/louis-pre/n8n-nodes-openai-completions-schema.git"
+  },
+  "keywords": [
+    "n8n-community-node-package"
+  ],
+  "scripts": {
+    "build": "n8n-node build",
+    "build:watch": "tsc --watch",
+    "dev": "n8n-node dev",
+    "lint": "n8n-node lint",
+    "lint:fix": "n8n-node lint --fix",
+    "release": "n8n-node release",
+    "prepublishOnly": "n8n-node prerelease"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "strict": true,
+    "credentials": [],
+    "nodes": [
+      "dist/nodes/LmChatOpenAiCompletionsSchema/LmChatOpenAiCompletionsSchema.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@n8n/node-cli": "*",
+    "@types/lodash": "^4.17.24",
+    "eslint": "9.29.0",
+    "prettier": "3.8.3",
+    "release-it": "20.2.0",
+    "typescript": "5.9.3"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  },
+  "dependencies": {
+    "@langchain/openai": "^0.1.0",
+    "@n8n/ai-utilities": "*",
+    "@n8n/config": "*",
+    "@n8n/di": "*",
+    "lodash": "^4.17.21",
+    "openai": "^4.28.0"
+  }
 }
