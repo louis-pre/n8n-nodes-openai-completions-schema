@@ -9,6 +9,7 @@ import {
 	type INodeTypeDescription,
 	type ISupplyDataFunctions,
 	type SupplyData,
+	jsonParse,
 } from 'n8n-workflow';
 
 import { mergeCustomHeaders } from './helpers/helpers';
@@ -55,6 +56,12 @@ const completionsResponseFormat: INodeProperties = {
 			value: 'json_object',
 			description:
 				'Enables JSON mode, which should guarantee the message the model generates is valid JSON',
+		},
+		{
+			name: 'JSON Schema',
+			value: 'json_schema',
+			description:
+				'Enables JSON Schema mode, which guarantees the response matches the provided JSON Schema',
 		},
 	],
 };
@@ -125,6 +132,14 @@ export class LmChatOpenAiCompletionsSchema implements INodeType {
 				displayOptions: {
 					show: {
 						'/options.responseFormat': ['json_object'],
+					},
+				},
+			},
+			{
+				...INCLUDE_JSON_WARNING,
+				displayOptions: {
+					show: {
+						'/options.responseFormat': ['json_schema'],
 					},
 				},
 			},
@@ -417,6 +432,56 @@ export class LmChatOpenAiCompletionsSchema implements INodeType {
 							show: {
 								'@version': [{ _cnd: { gte: 1.3 } }],
 								'/responsesApiEnabled': [false],
+							},
+						},
+					},
+					{
+						displayName: 'JSON Schema Name',
+						name: 'jsonSchemaName',
+						type: 'string',
+						default: 'response_schema',
+						description:
+							'The name of the response format. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.',
+						displayOptions: {
+							show: {
+								'/options.responseFormat': ['json_schema'],
+							},
+						},
+					},
+					{
+						displayName: 'JSON Schema',
+						name: 'jsonSchema',
+						type: 'json',
+						default: jsonSchemaExample,
+						description: 'The JSON Schema that the response must conform to',
+						displayOptions: {
+							show: {
+								'/options.responseFormat': ['json_schema'],
+							},
+						},
+					},
+					{
+						displayName: 'JSON Schema Description',
+						name: 'jsonSchemaDescription',
+						type: 'string',
+						default: '',
+						description: 'Optional description of the JSON Schema',
+						displayOptions: {
+							show: {
+								'/options.responseFormat': ['json_schema'],
+							},
+						},
+					},
+					{
+						displayName: 'JSON Schema Strict',
+						name: 'jsonSchemaStrict',
+						type: 'boolean',
+						default: false,
+						description:
+							'Whether to require that the response strictly matches the provided JSON Schema',
+						displayOptions: {
+							show: {
+								'/options.responseFormat': ['json_schema'],
 							},
 						},
 					},
@@ -789,7 +854,23 @@ export class LmChatOpenAiCompletionsSchema implements INodeType {
 			const kwargs = prepareAdditionalResponsesParams(options);
 			Object.assign(modelKwargs, kwargs);
 		} else {
-			if (options.responseFormat) modelKwargs.response_format = { type: options.responseFormat };
+			if (options.responseFormat) {
+				if (options.responseFormat === 'json_schema') {
+					modelKwargs.response_format = {
+						type: 'json_schema',
+						json_schema: {
+							name: options.jsonSchemaName,
+							schema: jsonParse(options.jsonSchema, {
+								errorMessage: 'Failed to parse JSON Schema',
+							}),
+							...(options.jsonSchemaDescription && { description: options.jsonSchemaDescription }),
+							strict: options.jsonSchemaStrict,
+						},
+					};
+				} else {
+					modelKwargs.response_format = { type: options.responseFormat };
+				}
+			}
 			if (options.reasoningEffort && ['low', 'medium', 'high'].includes(options.reasoningEffort)) {
 				modelKwargs.reasoning_effort = options.reasoningEffort;
 			}
